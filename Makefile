@@ -71,7 +71,7 @@ build : clean lint getdefaultcontent run unzipimages config flush
 
 .PHONY: ci
 ci: export DOCKER_COMPOSE_FILE = docker-compose.ci.yml
-ci: lint getdefaultcontent run config ci-copyimages flush test-codeception
+ci: lint getdefaultcontent run config flush test-codeception
 
 .PHONY: ci-%
 ci-%: export DOCKER_COMPOSE_FILE = docker-compose.ci.yml
@@ -205,8 +205,11 @@ php-shell:
 
 .PHONY: test-codeception
 test-codeception:
+	@docker cp scripts/duplicate-db.sh $(shell $(COMPOSE_ENV) docker-compose ps -q db):/tmp/duplicate-db.sh
+	@docker-compose exec db chmod +x /tmp/duplicate-db.sh
+	@docker-compose exec db bash /tmp/duplicate-db.sh
 	@docker-compose exec php-fpm sh -c 'cd tests && composer install --prefer-dist --no-progress'
-	@docker-compose exec php-fpm tests/vendor/bin/codecept run --xml=junit.xml --html
+	@docker-compose exec php-fpm tests/vendor/bin/codecept run wpunit --xml=junit.xml --html --debug
 
 .PHONY: test-codeception-failed
 test-codeception-failed:

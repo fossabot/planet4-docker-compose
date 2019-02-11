@@ -11,6 +11,7 @@ services:
       context: defaultcontent
       dockerfile: ../ci/db/Dockerfile
     env_file:
+      - ./app.env
       - ./db.env
     networks:
       - db
@@ -24,7 +25,7 @@ services:
       - local
       - db
     dns:
-      - ${DNS_RESOLVER:-1.1.1.1}
+      - ${DNS_RESOLVER:-8.8.8.8}
     environment:
       - APP_ENV=${APP_ENV:-develop}
       - APP_HOSTNAME=${APP_HOSTNAME:-www.planet4.test}
@@ -37,7 +38,7 @@ services:
       - NEWRELIC_LICENSE=${NEWRELIC_LICENSE:-false}
       # - OVERWRITE_EXISTING_FILES=false
       - WP_FORCE_SSL_ADMIN=false
-      - WP_REDIS_ENABLED=${WP_REDIS_ENABLED:-true}
+      - WP_REDIS_ENABLED=false
       # - WP_STATELESS_MEDIA_BUCKET=${APP_HOSTNAME:-www-planet4-test}
       - WP_STATELESS_MEDIA_ENABLED=${WP_STATELESS_MEDIA_ENABLED:-false}
       - WP_DEFAULT_CONTENT=false
