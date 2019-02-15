@@ -208,6 +208,9 @@ test-codeception:
 	@docker cp scripts/duplicate-db.sh $(shell $(COMPOSE_ENV) docker-compose ps -q db):/tmp/duplicate-db.sh
 	@docker-compose exec db chmod +x /tmp/duplicate-db.sh
 	@docker-compose exec db bash /tmp/duplicate-db.sh
+	@docker cp scripts/configure-wpunit.sh $(shell $(COMPOSE_ENV) docker-compose ps -q php-fpm):/tmp/configure-wpunit.sh
+	@docker-compose exec php-fpm chmod +x /tmp/configure-wpunit.sh
+	@docker-compose exec php-fpm bash /tmp/configure-wpunit.sh
 	@docker-compose exec php-fpm sh -c 'cd tests && composer install --prefer-dist --no-progress'
 	@docker-compose exec php-fpm tests/vendor/bin/codecept run wpunit --xml=junit.xml --html --debug
 
