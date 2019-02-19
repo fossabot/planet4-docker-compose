@@ -71,7 +71,7 @@ build : clean lint getdefaultcontent run unzipimages config flush
 
 .PHONY: ci
 ci: export DOCKER_COMPOSE_FILE = docker-compose.ci.yml
-ci: lint getdefaultcontent run config flush test-codeception
+ci: lint getdefaultcontent run config ci-copyimages flush prepare-env-codeception test-codeception
 
 .PHONY: ci-%
 ci-%: export DOCKER_COMPOSE_FILE = docker-compose.ci.yml
@@ -162,7 +162,6 @@ start-stateless:
 config:
 	docker-compose exec -T php-fpm wp rewrite structure $(REWRITE)
 	docker-compose exec -T php-fpm wp option set rt_wp_nginx_helper_options '$(NGINX_HELPER_JSON)' --format=json
-	docker-compose exec php-fpm wp option patch insert planet4_options cookies_field "Planet4 Cookie Text"
 	docker-compose exec php-fpm wp user update admin --user_pass=admin --role=administrator
 	docker-compose exec php-fpm wp plugin deactivate wp-stateless
 
@@ -203,16 +202,19 @@ flush:
 php-shell:
 	@docker-compose run --rm --no-deps php-fpm bash
 
-.PHONY: test-codeception
-test-codeception:
-	@docker cp scripts/duplicate-db.sh $(shell $(COMPOSE_ENV) docker-compose ps -q db):/tmp/duplicate-db.sh
+.PHONY: prepare-env-codeception
+prepare-env-codeception:
+	@docker cp ci/scripts/duplicate-db.sh $(shell $(COMPOSE_ENV) docker-compose ps -q db):/tmp/duplicate-db.sh
 	@docker-compose exec db chmod +x /tmp/duplicate-db.sh
 	@docker-compose exec db bash /tmp/duplicate-db.sh
-	@docker cp scripts/configure-wpunit.sh $(shell $(COMPOSE_ENV) docker-compose ps -q php-fpm):/tmp/configure-wpunit.sh
+	@docker cp ci/scripts/configure-wpunit.sh $(shell $(COMPOSE_ENV) docker-compose ps -q php-fpm):/tmp/configure-wpunit.sh
 	@docker-compose exec php-fpm chmod +x /tmp/configure-wpunit.sh
-	@docker-compose exec php-fpm bash /tmp/configure-wpunit.sh
-	@docker-compose exec php-fpm sh -c 'cd tests && composer install --prefer-dist --no-progress'
-	@docker-compose exec php-fpm tests/vendor/bin/codecept run wpunit --xml=junit.xml --html --debug
+
+.PHONY: test-codeception
+test-codeception:
+	@docker-compose exec php-fpm bash -c 'cd tests && composer install --prefer-dist --no-progress'
+	@docker-compose exec php-fpm bash -c 'TEST_SITE_PLUGINS=`bash /tmp/configure-wpunit.sh` tests/vendor/bin/codecept run wpunit --xml=junit.xml --html --debug'
+	@docker-compose exec php-fpm tests/vendor/bin/codecept run acceptance --xml=junit.xml --html
 
 .PHONY: test-codeception-failed
 test-codeception-failed:
